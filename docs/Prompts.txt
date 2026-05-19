@@ -1,0 +1,54 @@
+We are building a small POC but with real concepts to allow wallet to wallet transfer.
+
+The goal is to build only the backend with an API to support wallet to wallet transfer.
+Here's how the API would look:
+```text
+POST /transfers
+```
+
+Example request:
+
+```json
+{
+  "idempotencyKey": "abc123",
+  "fromWalletId": "wallet_1",
+  "toWalletId": "wallet_2",
+  "amount": 100
+}
+```
+
+Here are the important things that we need to take care of:
+- Idempotency
+- Concurrency
+- High Consistency
+
+We will discuss and solutionize the above points in details later but before that let's break down our end goal into smaller tasks.
+
+First create small hello world API while keeping the golang clean file structure in place. Let's do following:
+- Create a go.mod file.
+- We will be using `fiber` as our backend framework.
+- Create clean separation in directory structure. We can have:
+   -- cmd: for entrypoint
+   -- pkg: for application business logic, domain models etc.
+   -- api: for http handlers, routes etc.
+   -- test: for tests
+
+Once we do this we will move to the next phase.
+
+--------------------------------------
+Now that we have the basic structure ready with an empty transfer API let's move to the next phase.
+
+In this phase we are going to setup our service using docker-compose along with an postgres service so that we can use database.
+I have already done basic config and conenction pool setup using https://github.com/jackc/pgx.
+
+Now let's create a docker compose setup with postgres and goose migrations.
+
+Here's what we should do:
+- Create a Dockerfile to build and run the server
+- Create docker compose to run service and postgres
+- Create Dockerfile.migrations to run and create db migrations using goose.
+  - For this let's create two scripts inside a new scripts directory.
+  - One script to run migrations using `goose up`
+  - Other script to create a new migration using `goose create`
+
+Before continuing ask me for any clarifications and doubts.

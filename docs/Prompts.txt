@@ -100,3 +100,25 @@ Refer to `docs/HOW_TO_RUN.md` to create and run migrations.
 In the selected lines we are checking if wallet exists but shouldn't this be the first check even before creating transaction?
 
 -----------------------------------------------------------------------
+Now, can you write units tests for the core `transfers` API?
+
+Make sure to:
+- Add behavioural tests instead of focusing on implementation (However with mocking database you might need to assert on queries).
+- We need to test scenarios like: insufficient funds, idempotency, concurrent wallet transfers, invalid wallets.
+- Make sure to avoid redundancy by using test setup and tear down for repeated test code.
+- Create test helpers if needed
+
+
+First come up with list of test cases for /transfers API then we will move forward after discussing those.
+
+-----------------------------------------------------------------------
+
+Let's setup integration tests. We already have the docker-compose which runs our service and migrations.
+
+We don't need to do an isolated integration test setup instead we can re-use our docker compose based running service. We will manually clean up the rows created by us in the test teardown.
+
+So here's how it will work to run integration tests:
+- Developer needs to run `docker compose up`.
+- Developer runs the integration tests which runs on existing docker compose setup but the tests should self-clean the clutter.
+
+That's it.

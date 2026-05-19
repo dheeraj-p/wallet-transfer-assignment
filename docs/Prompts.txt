@@ -1,3 +1,4 @@
+-----------------------------------------------------------------------
 We are building a small POC but with real concepts to allow wallet to wallet transfer.
 
 The goal is to build only the backend with an API to support wallet to wallet transfer.
@@ -35,7 +36,8 @@ First create small hello world API while keeping the golang clean file structure
 
 Once we do this we will move to the next phase.
 
---------------------------------------
+-----------------------------------------------------------------------
+
 Now that we have the basic structure ready with an empty transfer API let's move to the next phase.
 
 In this phase we are going to setup our service using docker-compose along with an postgres service so that we can use database.
@@ -52,3 +54,49 @@ Here's what we should do:
   - Other script to create a new migration using `goose create`
 
 Before continuing ask me for any clarifications and doubts.
+
+-----------------------------------------------------------------------
+
+Now we also have the database, docker compose and migrations setup for our service.
+
+Let's implement the wallet transfer now. The idea is as following:
+To keep the transfer highly consistent and atomic we will go with pessimistic locking (row-level locks) along with a double entry ledger mechasim. So here's how our tables going to look like:
+- wallets: Contains balance, wallet_id, created_at, updated_at etc. (PK: walled_id)
+- transactions: Keeps track of each transaction, handles idempotency, wallet id and the direction, state of transaction lie "PENDIG", "PROCESSED" and "FAILED". (PK: id, UniqueKey: Idempotency_key)
+- ledger_entries: will contain, transaction_id, type (CREDIT or DEBIT), amout, timestamps etc.(There will always be 2 entries for each transaction to maintain integrity) -- PK: entry_id, index on updated_at, wallet_id (maybe a composite index)
+
+Idea is to keep the entire transfer atomic. We will use `SELECT FOR UPDATE` along with READ COMMITTED isolation level on our postgres database to make sure our writes and reads are consistent.
+
+Now let's do following:
+- Create database migrations for above tables, create enums for the transaction states and ledger entry type, also add migration for isolation level set to READ COMMITTED.
+- Implement a new function in WalletRepository to create transaction with. This should be a databse level transaction which first locks the wallet rows for both sender and receiver wallet (smaller wallet id first) to avoid deadlock like situations. So the query could look like:
+```
+SELECT ... FROM wallets WHERE wallet_id IN (smaller_wallet_id, greater_wallet_id) FOR UPDATE 
+```
+
+Use sortable IDs for wallets (do not use UUID v4).
+
+After this, add transaction_record, ledger entries, update balance in wallets table.
+
+During this transaction there can be different scenarios:
+- If transaction already exists for the same idempotency key, simple return that transaction.
+- If wallet balance isn't sufficient return error.
+- If any error occurs between the transaction make sure to mark the transaction failed (if transaction table entry creation fails then return error from service level).
+- If concurrent request comes for the same idempotency key while the transaction is still processing then simply return the transaction with status PENDING.
+
+This should be your order of execution in the database transaction:
+- Lock the wallet rows
+- Create transaction entry with PENDING as default.
+- Create ledger entries
+- Update the wallet balance.
+- Commit the transaction
+
+Analyse the codebase and my approach and add your suggestions if you feel something is missing.
+
+Refer to `docs/HOW_TO_RUN.md` to create and run migrations.
+
+-----------------------------------------------------------------------
+
+In the selected lines we are checking if wallet exists but shouldn't this be the first check even before creating transaction?
+
+-----------------------------------------------------------------------

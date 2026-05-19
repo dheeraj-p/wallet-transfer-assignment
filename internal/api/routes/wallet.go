@@ -9,4 +9,6 @@ import (
 
 func RegisterWalletRoutes(app *fiber.App, service wallet.WalletService) {
 	app.Post("/transfers", handlers.TransferHandler(service))
+	app.Post("/wallets", handlers.CreateWalletHandler(service))
+	app.Get("/wallets/:id", handlers.GetWalletHandler(service))
 }

@@ -30,7 +30,7 @@ go test ./...
 
 ## Database Migrations
 
-Database migration files are stored in the `db/migrations` directory. To apply migrations, we use [goose](https://github.com/pressly/goose):
+Database migration files are stored in the `migrations` directory. To apply migrations, we use [goose](https://github.com/pressly/goose):
 
 Migrations are automatically run when you do `docker compose up -d`. However to explicitly run just the migrations you can run following:
 ```bash

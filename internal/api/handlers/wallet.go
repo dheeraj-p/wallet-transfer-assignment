@@ -14,12 +14,36 @@ func TransferHandler(service wallet.WalletService) fiber.Handler {
 			return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
 		}
 
-		err := service.TransferFunds(c.Context(), req)
+		tx, err := service.TransferFunds(c.Context(), req)
 		if err != nil {
 			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
 		}
 
-		// Placeholder response for initial scaffolding
-		return c.Status(200).JSON(fiber.Map{"status": "received", "idempotencyKey": req.IdempotencyKey})
+		return c.Status(200).JSON(fiber.Map{"status": tx.State, "transactionId": tx.ID})
+	}
+}
+
+func CreateWalletHandler(service wallet.WalletService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		var req dtos.CreateWalletRequest
+		if err := c.BodyParser(&req); err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
+		}
+		w, err := service.CreateWallet(c.Context(), req)
+		if err != nil {
+			return c.Status(400).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(201).JSON(fiber.Map{"walletId": w.WalletID, "balance": w.Balance})
+	}
+}
+
+func GetWalletHandler(service wallet.WalletService) fiber.Handler {
+	return func(c *fiber.Ctx) error {
+		id := c.Params("id")
+		w, err := service.GetWallet(c.Context(), id)
+		if err != nil {
+			return c.Status(404).JSON(fiber.Map{"error": err.Error()})
+		}
+		return c.Status(200).JSON(fiber.Map{"walletId": w.WalletID, "balance": w.Balance})
 	}
 }
